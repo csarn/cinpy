@@ -29,3 +29,12 @@ Benchmarking
 cinpy_test.py is a very small benchmark program. It reports the time
 required to execute the same functions written in Python and in C.
 
+
+
+Authors
+-------
+
+This seems to be originally from Antti Kervinen (ask@cs.tut.fi),
+see
+http://www.redditmirror.cc/cache/websites/www.cs.tut.fi_7ea3v/www.cs.tut.fi/_ask/cinpy/index.html
+

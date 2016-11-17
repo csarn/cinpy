@@ -96,6 +96,7 @@ def defc(fun_name,fun_prototype,c_code):
 
     # get the result
     p = _libtcc.tcc_get_symbol(tccstate,fun_name.encode('ascii'))
+    assert p != 0
     return fun_prototype(p)
     
 
