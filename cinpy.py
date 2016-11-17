@@ -37,6 +37,8 @@ Simple example: recursive implementation for fibonacci numbers
 1346269
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import ctypes
 import os
 import sys
@@ -88,20 +90,18 @@ def defc(fun_name,fun_prototype,c_code):
     _req0("tcc_set_output_type",
           _libtcc.tcc_set_output_type(tccstate,0))
     _req0("tcc_compile_string",
-          _libtcc.tcc_compile_string(tccstate,c_code))
+          _libtcc.tcc_compile_string(tccstate,c_code.encode('ascii')))
     _req0("tcc_relocate",
-          _libtcc.tcc_relocate(tccstate))
+          _libtcc.tcc_relocate(tccstate, 1))
 
     # get the result
-    p=ctypes.c_long()
-    _req0("tcc_get_symbol",
-          _libtcc.tcc_get_symbol(tccstate,ctypes.byref(p),fun_name))
-    return fun_prototype(p.value)
+    p = _libtcc.tcc_get_symbol(tccstate,fun_name.encode('ascii'))
+    return fun_prototype(p)
     
 
 if __name__=='__main__': # test:
 
-    print "**** cinpy module test"
+    print("**** cinpy module test")
 
 
     test,verdict="Load libtcc","FAIL"
@@ -109,15 +109,15 @@ if __name__=='__main__': # test:
         load_libtcc()
         verdict="PASS"
     except ImportError:
-        print verdict,test
-        print "Make sure that libtcc.so is in LD_LIBRARY_PATH"
-        print "or in the current directory."
-        print "You may have to link it by yourself from tcc sources:"
-        print "First run 'make libtcc.o', then"
-        print "'gcc -shared -Wl,-soname,libtcc.so -o libtcc.so libtcc.o'"
-        print "Cannot continue module test."
+        print(verdict,test)
+        print("Make sure that libtcc.so is in LD_LIBRARY_PATH")
+        print("or in the current directory.")
+        print("You may have to link it by yourself from tcc sources:")
+        print("First run 'make libtcc.o', then")
+        print("'gcc -shared -Wl,-soname,libtcc.so -o libtcc.so libtcc.o'")
+        print("Cannot continue module test.")
         sys.exit(1)
-    print verdict,test
+    print(verdict,test)
 
 
     test,verdict="Define a function in C","FAIL"
@@ -129,18 +129,18 @@ if __name__=='__main__': # test:
                   }
                   """)
         verdict="PASS"
-    except ValueError, e:
-        print verdict,test
-        print "FAIL: tcc returned an error:",str(e)
-        print "Cannot continue module test."
+    except ValueError as e:
+        print(verdict,test)
+        print("FAIL: tcc returned an error:",str(e))
+        print("Cannot continue module test.")
         sys.exit(1)
-    print verdict,test
+    print(verdict,test)
         
 
     test,verdict="Call the function and check the return value","FAIL"
     try:
         if testfun(43)==85: verdict="PASS"
     finally:
-        print verdict,test
+        print(verdict,test)
         
     
