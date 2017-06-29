@@ -115,6 +115,16 @@ class C:
         lookup = {
             'float': ctypes.c_float,
             'unsigned char': ctypes.c_uint8,
+            'char': ctypes.c_int8,
+            'unsigned short': ctypes.c_ushort,
+            'short': ctypes.c_short,
+            'unsigned int': ctypes.c_uint,
+            'int': ctypes.c_int,
+            'unsigned long': ctypes.c_ulong,
+            'long': ctypes.c_long,
+            'unsigned long long': ctypes.c_ulonglong,
+            'long long': ctypes.c_longlong,
+            'double': ctypes.c_double,
         }
         p = pycparser.c_parser.CParser()
         self.ast = ast = p.parse(self.code)
