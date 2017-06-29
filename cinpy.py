@@ -126,7 +126,7 @@ class C:
             args = [retval] + [' '.join(x.type.type.names)
                                for x in func.decl.type.args.params]
             functype = ctypes.CFUNCTYPE(*[lookup[x] for x in args])
-            func_obj = defc(name, functype, code)
+            func_obj = defc(name, functype, self.code)
             setattr(self, name, func_obj)
             # func_obj.__doc__ = self.code.split('\n')[func.coord.line+1]
             # func_obj.__str__ = lambda self: '<CFunction: {}>'.format(self.__doc__)
