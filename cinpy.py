@@ -42,6 +42,7 @@ from __future__ import print_function
 import ctypes
 import os
 import sys
+import platform
 
 version="0.10"
 
@@ -57,20 +58,21 @@ def load_libtcc(file_and_path_to_tcclib=None):
     addition to the directories mentioned in LD_LIBRARY_PATH.
     """
     global _libtcc
-    
+
     if file_and_path_to_tcclib:
         _libtcc=ctypes.cdll.LoadLibrary(file_and_path_to_tcclib)
         return 1
 
     ldlibpath=os.getenv("LD_LIBRARY_PATH","").split(":")
     ldlibpath.extend([".",
+                      os.path.dirname(__file__),
                       "/usr/local/lib/tcc","/usr/local/lib","/usr/lib",
                       "/opt/local/lib/tcc","/opt/local/lib","/opt/lib",
                       "/lib"])
-
+    extension = 'dll' if platform.system() == 'Windows' else 'so'
     for path in ldlibpath:
         try:
-            _libtcc=ctypes.cdll.LoadLibrary("%s/libtcc.so" % path)
+            _libtcc=ctypes.cdll.LoadLibrary("%s/libtcc.%s" % (path, extension))
             return 1
         except OSError:
             pass
@@ -98,7 +100,38 @@ def defc(fun_name,fun_prototype,c_code):
     p = _libtcc.tcc_get_symbol(tccstate,fun_name.encode('ascii'))
     assert p != 0
     return fun_prototype(p)
-    
+
+
+class C:
+    """wrapper class that automatically deducts the function type
+    from the c code."""
+
+    def __init__(self, code):
+        self.code = code
+        self.defc()
+
+    def defc(self):
+        import pycparser
+        lookup = {
+            'float': ctypes.c_float,
+            'unsigned char': ctypes.c_uint8,
+        }
+        p = pycparser.c_parser.CParser()
+        self.ast = ast = p.parse(self.code)
+        for func in ast.ext:
+            if not isinstance(func, pycparser.c_ast.FuncDef):
+                continue
+            name = func.decl.name
+            retval = ' '.join(func.decl.type.type.type.names)
+            args = [retval] + [' '.join(x.type.type.names)
+                               for x in func.decl.type.args.params]
+            functype = ctypes.CFUNCTYPE(*[lookup[x] for x in args])
+            func_obj = defc(name, functype, code)
+            setattr(self, name, func_obj)
+            # func_obj.__doc__ = self.code.split('\n')[func.coord.line+1]
+            # func_obj.__str__ = lambda self: '<CFunction: {}>'.format(self.__doc__)
+            # func_obj.__repr__ = func_obj.__str__
+
 
 if __name__=='__main__': # test:
 
@@ -136,12 +169,10 @@ if __name__=='__main__': # test:
         print("Cannot continue module test.")
         sys.exit(1)
     print(verdict,test)
-        
+
 
     test,verdict="Call the function and check the return value","FAIL"
     try:
         if testfun(43)==85: verdict="PASS"
     finally:
         print(verdict,test)
-        
-    
