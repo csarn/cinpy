@@ -49,6 +49,21 @@ version="0.10"
 # try to load libtcc.so
 
 _libtcc=None
+TCC_OUTPUT_MEMORY=1
+TCC_RELOCATE_AUTO=1
+
+def set_types():
+    global _libtcc
+    if _libtcc is None:
+        return
+    _libtcc.tcc_new.restype = ctypes.c_size_t
+    _libtcc.tcc_compile_string.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+    _libtcc.tcc_set_output_type.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    _libtcc.tcc_relocate.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    _libtcc.tcc_get_symbol.restype = ctypes.c_void_p
+    _libtcc.tcc_get_symbol.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+    _libtcc.tcc_add_library_path.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+    _libtcc.tcc_set_lib_path.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
 def load_libtcc(file_and_path_to_tcclib=None):
     """If you wish to specify exactly which file is the dynamically
@@ -61,6 +76,7 @@ def load_libtcc(file_and_path_to_tcclib=None):
 
     if file_and_path_to_tcclib:
         _libtcc=ctypes.cdll.LoadLibrary(file_and_path_to_tcclib)
+        set_types()
         return 1
 
     ldlibpath=os.getenv("LD_LIBRARY_PATH","").split(":")
@@ -73,10 +89,13 @@ def load_libtcc(file_and_path_to_tcclib=None):
     for path in ldlibpath:
         try:
             _libtcc=ctypes.cdll.LoadLibrary("%s/libtcc.%s" % (path, extension))
+            set_types()
             return 1
         except OSError:
             pass
     raise ImportError("libtcc is not loaded\n")
+
+
 
 def _req0(funname,retval):
     if retval!=0:
@@ -89,12 +108,13 @@ def defc(fun_name,fun_prototype,c_code):
     if not _libtcc: load_libtcc()
     # compile
     tccstate=_libtcc.tcc_new()
+
     _req0("tcc_set_output_type",
-          _libtcc.tcc_set_output_type(tccstate,0))
+          _libtcc.tcc_set_output_type(tccstate, TCC_OUTPUT_MEMORY))
     _req0("tcc_compile_string",
           _libtcc.tcc_compile_string(tccstate,c_code.encode('ascii')))
     _req0("tcc_relocate",
-          _libtcc.tcc_relocate(tccstate, 1))
+          _libtcc.tcc_relocate(tccstate, TCC_RELOCATE_AUTO))
 
     # get the result
     p = _libtcc.tcc_get_symbol(tccstate,fun_name.encode('ascii'))
